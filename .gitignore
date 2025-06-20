@@ -1,0 +1,50 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# dotenv environment files
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+debug.log
+
+# OS & IDE files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Sequelize generated files
+migrations/
+seeders/
+
+# Optional: coverage reports (if using testing)
+coverage/
+.nyc_output/
+
+# Swagger generated docs (if generated dynamically)
+swagger-output.json
+
+# Build artifacts (if using TypeScript or transpilation)
+dist/
+build/
+
+# Database (if using SQLite for testing)
+*.sqlite
+*.sqlite3
+
+# Misc
+tmp/
+*.bak
+*.
