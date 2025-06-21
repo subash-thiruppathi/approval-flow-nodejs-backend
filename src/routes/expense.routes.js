@@ -7,7 +7,7 @@ const role = require('../middleware/roleMiddleware');
  * @swagger
  * tags:
  *   name: Expenses
- *   description: Expense submission and approval flow
+ *   description: Multi-level expense approval flow (Manager → Accountant → Admin)
  */
 
 /**
@@ -32,14 +32,31 @@ const role = require('../middleware/roleMiddleware');
  *                 type: string
  *               amount:
  *                 type: number
+ *               description:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *               receipt_url:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Expense submitted successfully
  */
-
 router.post('/', auth, role('EMPLOYEE'), controller.createExpense);
 
-
+/**
+ * @swagger
+ * /api/expenses:
+ *   get:
+ *     summary: Get all expenses (Admin only)
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all expenses
+ */
+router.get('/', auth, role('ADMIN'), controller.getAllExpenses);
 
 /**
  * @swagger
@@ -51,31 +68,50 @@ router.post('/', auth, role('EMPLOYEE'), controller.createExpense);
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of user's expenses
+ *         description: List of user's expenses with approval history
  */
-
 router.get('/my', auth, controller.getMyExpenses);
 
 /**
  * @swagger
  * /api/expenses/pending-approvals:
  *   get:
- *     summary: Get all pending expenses for approval
+ *     summary: Get pending expenses for current user's approval level
  *     tags: [Expenses]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of pending expenses
+ *         description: List of expenses pending approval at user's level
  */
+router.get('/pending-approvals', auth, controller.getPendingApprovals);
 
-router.get('/pending-approvals', auth, role('MANAGER'), controller.pendingApprovals);
+/**
+ * @swagger
+ * /api/expenses/{id}:
+ *   get:
+ *     summary: Get expense details by ID
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Expense ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Expense details with approval history
+ */
+router.get('/:id', auth, controller.getExpenseById);
 
 /**
  * @swagger
  * /api/expenses/{id}/approve:
  *   post:
- *     summary: Approve or reject an expense
+ *     summary: Approve or reject an expense at current level
  *     tags: [Expenses]
  *     security:
  *       - bearerAuth: []
@@ -104,7 +140,6 @@ router.get('/pending-approvals', auth, role('MANAGER'), controller.pendingApprov
  *       200:
  *         description: Expense status updated
  */
-
-router.post('/:id/approve', auth, role('MANAGER'), controller.approveExpense);
+router.post('/:id/approve', auth, controller.approveExpense);
 
 module.exports = router;

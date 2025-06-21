@@ -4,7 +4,7 @@ const User = db.User;
 module.exports = function(requiredRole) {
   return async function(req, res, next) {
     const user = await User.findByPk(req.user.id, { include: db.Role });
-    console.log(`User roles: user `);
+    console.log(`User roles: user ${user.Roles} - required role ${requiredRole}`);
     const hasRole = user.Roles.some(role => role.name === requiredRole);
 
     if (!hasRole) {

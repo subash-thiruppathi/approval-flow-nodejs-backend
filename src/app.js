@@ -1,7 +1,7 @@
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsDoc = require('swagger-jsdoc');
-
+const cors = require('cors');
 const expenseRoutes = require('./routes/expense.routes');
 const authRoutes = require('./routes/auth.routes');
 
@@ -39,6 +39,17 @@ const swaggerOptions = {
   },
   apis: [__dirname + '/routes/*.js'],
 };
+
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.options('*', cors());
+
+app.use(express.json());
 
 const swaggerSpec = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

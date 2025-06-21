@@ -25,6 +25,7 @@ exports.login = async (req, res) => {
   const user = await User.findOne({ where: { email }, include: Role });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
+    console.error('Invalid credentials:', email);
     return res.status(401).json({ message: 'Invalid credentials' });
   }
 
