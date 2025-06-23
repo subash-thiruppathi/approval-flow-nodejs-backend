@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3001;
 
 (async () => {
   try {
-    await db.sequelize.sync({ force: true });
+    // await db.sequelize.sync({ force: true });
     console.log('Database synchronized successfully (tables recreated)');
     
     // Seed roles and statuses

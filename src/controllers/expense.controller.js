@@ -3,14 +3,23 @@ const { Expense, Approval, User, Role, Status } = db;
 
 exports.createExpense = async (req, res) => {
   try {
-    const { title, amount, description, category, receipt_url } = req.body;
+    const { title, amount, description, category } = req.body;
+    console.log('Creating expense with data:', req.body);
+    console.log('Uploaded file:', req.file);
+    
+    // Handle receipt file upload
+    let receipt_url = null;
+    if (req.file) {
+      // Store the relative path to the uploaded file
+      receipt_url = `/uploads/${req.file.filename}`;
+    }
     
     // Get PENDING status ID
     const pendingStatus = await Status.findOne({ where: { name: 'PENDING' } });
     
     const expense = await Expense.create({
       title,
-      amount,
+      amount: parseFloat(amount), // Ensure amount is a number
       description,
       category,
       receipt_url,
@@ -26,6 +35,7 @@ exports.createExpense = async (req, res) => {
     
     res.json(expenseWithStatus);
   } catch (error) {
+    console.error('Error creating expense:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -39,7 +49,9 @@ exports.getMyExpenses = async (req, res) => {
         include: [{ model: User, as: 'approver', attributes: ['name', 'email'] }]
       }]
     });
-    res.json(expenses);
+    let data = {data: expenses};
+    res.json(data);
+    // res.json(expenses);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -53,11 +65,11 @@ exports.getPendingApprovals = async (req, res) => {
     let whereCondition = {};
     
     if (userRoles.includes('MANAGER')) {
-      whereCondition = { status: 'PENDING', current_approval_level: 1 };
+      whereCondition = { status_id: 1, current_approval_level: 1 };
     } else if (userRoles.includes('ACCOUNTANT')) {
-      whereCondition = { status: 'MANAGER_APPROVED', current_approval_level: 2 };
+      whereCondition = { status_id: 2, current_approval_level: 2 };
     } else if (userRoles.includes('ADMIN')) {
-      whereCondition = { status: 'ACCOUNTANT_APPROVED', current_approval_level: 3 };
+      whereCondition = { status_id: 3, current_approval_level: 3 };
     } else {
       return res.status(403).json({ error: 'No approval permissions' });
     }
@@ -72,8 +84,8 @@ exports.getPendingApprovals = async (req, res) => {
         }
       ]
     });
-    
-    res.json(expenses);
+    let data = {data: expenses};
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -116,7 +128,8 @@ exports.approveExpense = async (req, res) => {
     } else {
       return res.status(403).json({ error: 'No approval permissions' });
     }
-
+    console.log(`Approver Role: ${expense.current_approval_level}`);
+    console.log(`Expected Level: ${expectedLevel}`);
     // Validate approval sequence
     if (expense.current_approval_level !== expectedLevel) {
       return res.status(400).json({ 
@@ -124,18 +137,39 @@ exports.approveExpense = async (req, res) => {
       });
     }
 
-    // Check if expense is in correct status for this level
+    const statusMap = {
+      1: 'PENDING',
+      2: 'MANAGER_APPROVED',
+      3: 'ACCOUNTANT_APPROVED',
+      4: 'FULLY_APPROVED',
+      5: 'REJECTED'
+    };
+
+    const statusNameToId = {
+      'PENDING': 1,
+      'MANAGER_APPROVED': 2,
+      'ACCOUNTANT_APPROVED': 3,
+      'FULLY_APPROVED': 4,
+      'REJECTED': 5
+    };
+
     const validStatuses = {
       1: ['PENDING'],
       2: ['MANAGER_APPROVED'],
       3: ['ACCOUNTANT_APPROVED']
     };
 
-    if (!validStatuses[expectedLevel].includes(expense.status)) {
-      return res.status(400).json({ 
-        error: `Expense cannot be processed at this level. Current status: ${expense.status}` 
+    const statusKey = statusMap[expense.status_id];
+
+    console.log(`Valid Statuses for Level ${expectedLevel}:`, validStatuses[expectedLevel]);
+    console.log(`Expense Status Key: ${statusKey}`);
+
+    if (!validStatuses[expectedLevel].includes(statusKey)) {
+      return res.status(400).json({
+        error: `Expense cannot be processed at this level. Current status: ${statusKey}`
       });
     }
+    console.log(`Expense is valid for approval at level ${status}`);
 
     // Create approval record
     await Approval.create({
@@ -148,9 +182,12 @@ exports.approveExpense = async (req, res) => {
       approver_role: approverRole
     });
 
+    // Convert status name to ID before updating
+    const nextStatusId = statusNameToId[nextStatus];
+
     // Update expense status and level
     await expense.update({ 
-      status: nextStatus,
+      status_id: nextStatusId,
       current_approval_level: nextLevel
     });
 
@@ -176,12 +213,13 @@ exports.getAllExpenses = async (req, res) => {
       ],
       order: [['createdAt', 'DESC']]
     });
-    res.json(expenses);
+    let data = {data: expenses};
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
+  
 exports.getExpenseById = async (req, res) => {
   try {
     const { id } = req.params;

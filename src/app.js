@@ -2,11 +2,15 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsDoc = require('swagger-jsdoc');
 const cors = require('cors');
+const path = require('path');
 const expenseRoutes = require('./routes/expense.routes');
 const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 app.use(express.json());
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Swagger config
 const swaggerOptions = {

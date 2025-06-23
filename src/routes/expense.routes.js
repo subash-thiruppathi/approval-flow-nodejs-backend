@@ -2,6 +2,7 @@ const router = require('express').Router();
 const controller = require('../controllers/expense.controller');
 const auth = require('../middleware/authMiddleware');
 const role = require('../middleware/roleMiddleware');
+const upload = require('../middleware/upload.middleware');
 
 /**
  * @swagger
@@ -14,14 +15,14 @@ const role = require('../middleware/roleMiddleware');
  * @swagger
  * /api/expenses:
  *   post:
- *     summary: Submit a new expense
+ *     summary: Submit a new expense with receipt upload
  *     tags: [Expenses]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -36,13 +37,15 @@ const role = require('../middleware/roleMiddleware');
  *                 type: string
  *               category:
  *                 type: string
- *               receipt_url:
+ *               receipt:
  *                 type: string
+ *                 format: binary
+ *                 description: Receipt image file (jpg, png, etc.)
  *     responses:
  *       200:
  *         description: Expense submitted successfully
  */
-router.post('/', auth, role('EMPLOYEE'), controller.createExpense);
+router.post('/', auth, role('EMPLOYEE'), upload.single('receipt'), controller.createExpense);
 
 /**
  * @swagger
