@@ -1,7 +1,7 @@
 const app = require('./app');
 const db = require('./models');
-const seedRoles = require('./seeders/roles.seeder');
-const seedStatuses = require('./seeders/status.seeder');
+const { createRoles } = require('./seeders/roles.seeder');
+const { createStatuses } = require('./seeders/status.seeder');
 
 const PORT = process.env.PORT || 3001;
 
@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 3001;
     console.log('Database synchronized successfully (tables recreated)');
     
     // Seed roles and statuses
-    await seedRoles();
-    await seedStatuses();
+    await createRoles();
+    await createStatuses();
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

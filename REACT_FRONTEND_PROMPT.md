@@ -11,8 +11,13 @@ http://localhost:3000/api
 ```
 
 ### Authentication Endpoints
-- `POST /auth/register` - User registration
+- ~~`POST /auth/register`~~ - **DISABLED** (Self-registration disabled for security)
 - `POST /auth/login` - User login (returns JWT token)
+- `POST /auth/onboard-user` - Admin-only user onboarding (Admin role required)
+- `GET /auth/users` - Get all users (Admin role required)
+- `POST /auth/request-password-reset` - Request password reset token
+- `POST /auth/reset-password` - Reset password with token
+- `POST /auth/change-password` - Change password (authenticated users)
 
 ### Expense Management Endpoints
 - `POST /expenses` - Submit new expense (Employee only)
@@ -50,11 +55,27 @@ PENDING → MANAGER_APPROVED → ACCOUNTANT_APPROVED → FULLY_APPROVED
 ### 2. Core Features to Implement
 
 #### Authentication System
-- Login/Register forms with validation
+- Login form with validation (no self-registration)
+- Password reset functionality (forgot password flow)
+- First-time login password change flow
 - JWT token management (localStorage/sessionStorage)
 - Protected routes based on authentication
 - Auto-logout on token expiration
 - Role-based navigation and UI elements
+
+#### User Management (Admin Only)
+- **User Onboarding Interface**:
+  - Add new users with name, email, and role selection
+  - Generate temporary passwords automatically
+  - Display temporary credentials to admin
+  - Bulk user import functionality (optional)
+  
+- **User Management Dashboard**:
+  - View all users in the system
+  - Edit user roles and information
+  - Deactivate/activate user accounts
+  - Reset user passwords
+  - User activity tracking
 
 #### Dashboard (Role-based)
 - **Employee Dashboard**:
@@ -372,4 +393,117 @@ Authorization: Bearer jwt_token_here
 }
 ```
 
-This comprehensive frontend will provide a complete user experience for the multi-level expense approval system, with role-based dashboards, intuitive approval workflows, and robust expense management capabilities.
+### Admin User Onboarding
+```javascript
+POST /api/auth/onboard-user
+Authorization: Bearer admin_jwt_token_here
+{
+  "name": "John Doe",
+  "email": "john.doe@company.com",
+  "roles": ["EMPLOYEE", "MANAGER"]
+}
+
+Response:
+{
+  "message": "User onboarded successfully",
+  "user": {
+    "id": 5,
+    "name": "John Doe",
+    "email": "john.doe@company.com",
+    "roles": ["EMPLOYEE", "MANAGER"],
+    "temporary_password": "a1b2c3d4e5f6"
+  }
+}
+```
+
+### Password Reset Flow
+```javascript
+// Step 1: Request password reset
+POST /api/auth/request-password-reset
+{
+  "email": "user@company.com"
+}
+
+Response:
+{
+  "message": "Password reset token generated",
+  "reset_token": "abc123def456...", // Remove in production
+  "expires_at": "2024-01-01T12:00:00.000Z"
+}
+
+// Step 2: Reset password with token
+POST /api/auth/reset-password
+{
+  "token": "abc123def456...",
+  "new_password": "newSecurePassword123"
+}
+
+Response:
+{
+  "message": "Password reset successfully"
+}
+```
+
+### Change Password (Authenticated Users)
+```javascript
+POST /api/auth/change-password
+Authorization: Bearer jwt_token_here
+{
+  "current_password": "oldPassword123",
+  "new_password": "newSecurePassword456"
+}
+
+Response:
+{
+  "message": "Password changed successfully"
+}
+```
+
+## Important Security Notes for Frontend Implementation
+
+### User Onboarding Security
+- **Admin-Only Access**: Only users with ADMIN role can access user onboarding features
+- **Role Validation**: Validate role selections on frontend before submission
+- **Temporary Password Handling**: Display temporary passwords securely and provide copy-to-clipboard functionality
+- **First Login Flow**: Implement mandatory password change for first-time users
+
+### Password Reset Security
+- **Email Validation**: Implement proper email format validation
+- **Token Expiry**: Handle token expiration gracefully with clear error messages
+- **Password Strength**: Implement password strength validation (minimum 6 characters, complexity requirements)
+- **Rate Limiting**: Consider implementing client-side rate limiting for password reset requests
+
+### Additional Frontend Components Needed
+
+#### User Management Components
+```
+src/components/admin/
+├── UserOnboardingForm.jsx
+├── UserManagementTable.jsx
+├── UserEditModal.jsx
+└── UserRoleSelector.jsx
+```
+
+#### Password Management Components
+```
+src/components/auth/
+├── ForgotPasswordForm.jsx
+├── ResetPasswordForm.jsx
+├── ChangePasswordForm.jsx
+└── FirstLoginPasswordChange.jsx
+```
+
+#### Updated Page Structure
+```
+src/pages/
+├── Login.jsx
+├── ForgotPassword.jsx
+├── ResetPassword.jsx
+├── ChangePassword.jsx
+├── UserManagement.jsx (Admin only)
+└── FirstLoginSetup.jsx
+```
+
+This comprehensive frontend will provide a complete user experience for the multi-level expense approval system, with secure user onboarding, robust password management, role-based dashboards, intuitive approval workflows, and comprehensive expense management capabilities.
+
+**IMPORTANT**: Only implement the new user onboarding and password reset features. Do not modify existing expense approval functionality unless specifically required for integration.
