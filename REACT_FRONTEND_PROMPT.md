@@ -27,6 +27,118 @@ http://localhost:3000/api
 - `POST /expenses/:id/approve` - Approve/reject expense
 - `GET /expenses` - Get all expenses (Admin only)
 
+### Analytics Endpoints (Admin Only)
+- `GET /analytics/summary` - Get key metrics summary
+- `GET /analytics/expenses-by-category` - Get expense breakdown by category
+- `GET /analytics/expenses-by-status` - Get expense breakdown by status
+- `GET /analytics/approval-times` - Get average approval times
+- `GET /analytics/top-spenders` - Get top 10 spenders
+
+#### Analytics API Integration Examples
+
+##### Get Summary
+```javascript
+GET /api/analytics/summary
+Authorization: Bearer admin_jwt_token_here
+
+Response:
+{
+  "totalExpenses": 100,
+  "totalAmount": 50000,
+  "pendingExpenses": 10,
+  "approvedExpenses": 85
+}
+```
+
+##### Get Expenses by Category
+```javascript
+GET /api/analytics/expenses-by-category
+Authorization: Bearer admin_jwt_token_here
+
+Response:
+[
+  {
+    "category": "Travel",
+    "count": 20,
+    "total": 15000
+  },
+  {
+    "category": "Meals",
+    "count": 50,
+    "total": 10000
+  }
+]
+```
+
+##### Get Expenses by Status
+```javascript
+GET /api/analytics/expenses-by-status
+Authorization: Bearer admin_jwt_token_here
+
+Response:
+[
+  {
+    "status": "PENDING",
+    "count": 10,
+    "color_code": "#FFA500"
+  },
+  {
+    "status": "MANAGER_APPROVED",
+    "count": 5,
+    "color_code": "#87CEEB"
+  },
+  {
+    "status": "ACCOUNTANT_APPROVED",
+    "count": 5,
+    "color_code": "#9370DB"
+  },
+  {
+    "status": "FULLY_APPROVED",
+    "count": 70,
+    "color_code": "#32CD32"
+  },
+  {
+    "status": "REJECTED",
+    "count": 10,
+    "color_code": "#DC143C"
+  }
+]
+```
+
+##### Get Approval Times
+```javascript
+GET /api/analytics/approval-times
+Authorization: Bearer admin_jwt_token_here
+
+Response:
+[
+  {
+    "expense_id": 1,
+    "avg_approval_time": "2 days"
+  }
+]
+```
+
+##### Get Top Spenders
+```javascript
+GET /api/analytics/top-spenders
+Authorization: Bearer admin_jwt_token_here
+
+Response:
+[
+  {
+    "id": 5,
+    "name": "John Doe",
+    "total_spent": 12000
+  },
+  {
+    "id": 12,
+    "name": "Jane Smith",
+    "total_spent": 9500
+  }
+]
+```
+
 ### Real-time Notification Endpoints
 - `POST /notifications/device-token` - Register device token for push notifications
 - `GET /notifications` - Get user notifications (paginated)
@@ -112,6 +224,13 @@ PENDING → MANAGER_APPROVED → ACCOUNTANT_APPROVED → FULLY_APPROVED
   - View all expenses in system
   - System-wide expense analytics
   - Final approve/reject with remarks
+
+#### Analytics Dashboard (Admin Only)
+- **Summary Metrics**: Display total expenses, total amount, pending expenses, and approved expenses.
+- **Expenses by Category**: Show a pie chart or bar chart of expenses broken down by category.
+- **Expenses by Status**: Display a bar chart showing the number of expenses in each status (Pending, Approved, Rejected).
+- **Approval Times**: Show the average time it takes for an expense to be approved.
+- **Top Spenders**: Display a list of the top 10 users who have spent the most.
 
 #### Expense Management
 - **Expense Submission Form**:
@@ -539,7 +658,7 @@ The backend provides comprehensive real-time push notifications using Firebase C
 - **Real-time Updates**: Live notifications via Socket.IO connection
 - **Notification History**: Persistent notification storage and retrieval
 - **Customizable Icons**: Different icons for different notification types
-- **Notification Settings**: User preferences for notification types
+- **Notification Settings**: User preferences for notification types    
 
 ##### Notification Types
 ```javascript

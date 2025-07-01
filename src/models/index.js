@@ -28,6 +28,7 @@ db.Role.belongsToMany(db.User, {
 
 // Expense -> User (One-to-Many)
 db.Expense.belongsTo(db.User, { as: 'requester', foreignKey: 'requested_by' });
+db.User.hasMany(db.Expense, { as: 'expenses', foreignKey: 'requested_by' });
 
 // Approval -> Expense, User
 db.Approval.belongsTo(db.User, { as: 'approver', foreignKey: 'approver_id' });

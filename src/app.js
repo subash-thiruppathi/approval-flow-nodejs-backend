@@ -6,6 +6,7 @@ const path = require('path');
 const expenseRoutes = require('./routes/expense.routes');
 const authRoutes = require('./routes/auth.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const analyticsRoutes = require('./routes/analytics.routes.js');
 
 const app = express();
 app.use(express.json());
@@ -63,6 +64,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Serve notification icons
 app.use('/icons', express.static(path.join(__dirname, '../public/icons')));
