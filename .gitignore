@@ -51,3 +51,6 @@ uploads/
 tmp/
 *.bak
 *.
+
+
+firebase.config.js

@@ -1,5 +1,6 @@
 const db = require('../models');
 const { Expense, Approval, User, Role, Status } = db;
+const NotificationService = require('../services/notification.service');
 
 exports.createExpense = async (req, res) => {
   try {
@@ -27,6 +28,19 @@ exports.createExpense = async (req, res) => {
       current_approval_level: 1,
       requested_by: req.user.id
     });
+    
+    // Send notification to managers about new expense submission
+    try {
+      await NotificationService.sendExpenseNotification(
+        expense,
+        'EXPENSE_SUBMITTED',
+        req.user.name,
+        req.user.id
+      );
+    } catch (notificationError) {
+      console.error('Failed to send expense submission notification:', notificationError);
+      // Don't fail the expense creation if notification fails
+    }
     
     // Return expense with status details
     const expenseWithStatus = await Expense.findByPk(expense.id, {
@@ -190,6 +204,43 @@ exports.approveExpense = async (req, res) => {
       status_id: nextStatusId,
       current_approval_level: nextLevel
     });
+
+    // Send appropriate notifications based on approval status
+    try {
+      const updatedExpense = await Expense.findByPk(id);
+      const approverUser = await User.findByPk(req.user.id);
+      
+      if (status === 'APPROVED') {
+        if (nextStatus === 'FULLY_APPROVED') {
+          // Final approval - notify requester
+          await NotificationService.sendExpenseNotification(
+            updatedExpense,
+            'EXPENSE_FULLY_APPROVED',
+            approverUser.name,
+            req.user.id
+          );
+        } else {
+          // Intermediate approval - notify next level approvers
+          await NotificationService.sendExpenseNotification(
+            updatedExpense,
+            'EXPENSE_APPROVED',
+            approverUser.name,
+            req.user.id
+          );
+        }
+      } else {
+        // Rejection - notify requester
+        await NotificationService.sendExpenseNotification(
+          updatedExpense,
+          'EXPENSE_REJECTED',
+          approverUser.name,
+          req.user.id
+        );
+      }
+    } catch (notificationError) {
+      console.error('Failed to send approval notification:', notificationError);
+      // Don't fail the approval if notification fails
+    }
 
     const message = status === 'APPROVED' 
       ? `Expense approved by ${approverRole}. ${nextStatus === 'FULLY_APPROVED' ? 'Expense fully approved!' : `Moved to ${approverRole === 'MANAGER' ? 'Accountant' : 'Admin'} approval.`}`

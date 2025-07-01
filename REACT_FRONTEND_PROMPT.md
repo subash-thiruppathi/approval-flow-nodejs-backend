@@ -27,6 +27,18 @@ http://localhost:3000/api
 - `POST /expenses/:id/approve` - Approve/reject expense
 - `GET /expenses` - Get all expenses (Admin only)
 
+### Real-time Notification Endpoints
+- `POST /notifications/device-token` - Register device token for push notifications
+- `GET /notifications` - Get user notifications (paginated)
+- `GET /notifications/unread-count` - Get unread notification count
+- `PUT /notifications/:id/read` - Mark notification as read
+- `PUT /notifications/mark-all-read` - Mark all notifications as read
+- `GET /notifications/device-tokens` - Get user's registered device tokens
+- `DELETE /notifications/device-token/:id` - Remove device token
+- `GET /notifications/settings` - Get notification preferences
+- `PUT /notifications/settings` - Update notification preferences
+- `POST /notifications/test` - Send test notification (development)
+
 ### User Roles & Permissions
 1. **EMPLOYEE**: Submit expenses, view own expenses
 2. **MANAGER**: First-level approval (Level 1)
@@ -51,6 +63,8 @@ PENDING → MANAGER_APPROVED → ACCOUNTANT_APPROVED → FULLY_APPROVED
 - **React Query/TanStack Query** for data fetching and caching
 - **Context API** or **Zustand** for state management
 - **TypeScript** (preferred) for type safety
+- **Firebase SDK** for push notifications
+- **Socket.IO Client** for real-time notifications
 
 ### 2. Core Features to Implement
 
@@ -493,6 +507,17 @@ src/components/auth/
 └── FirstLoginPasswordChange.jsx
 ```
 
+#### Notification Components
+```
+src/components/notifications/
+├── NotificationBell.jsx
+├── NotificationDropdown.jsx
+├── NotificationList.jsx
+├── NotificationItem.jsx
+├── NotificationSettings.jsx
+└── InAppNotification.jsx
+```
+
 #### Updated Page Structure
 ```
 src/pages/
@@ -501,9 +526,193 @@ src/pages/
 ├── ResetPassword.jsx
 ├── ChangePassword.jsx
 ├── UserManagement.jsx (Admin only)
-└── FirstLoginSetup.jsx
+├── FirstLoginSetup.jsx
+└── Notifications.jsx
 ```
 
-This comprehensive frontend will provide a complete user experience for the multi-level expense approval system, with secure user onboarding, robust password management, role-based dashboards, intuitive approval workflows, and comprehensive expense management capabilities.
+#### Real-time Notification System
 
-**IMPORTANT**: Only implement the new user onboarding and password reset features. Do not modify existing expense approval functionality unless specifically required for integration.
+The backend provides comprehensive real-time push notifications using Firebase Cloud Messaging and Socket.IO. The frontend should implement:
+
+##### Notification Features
+- **Push Notifications**: Browser/mobile push notifications via Firebase
+- **Real-time Updates**: Live notifications via Socket.IO connection
+- **Notification History**: Persistent notification storage and retrieval
+- **Customizable Icons**: Different icons for different notification types
+- **Notification Settings**: User preferences for notification types
+
+##### Notification Types
+```javascript
+const NOTIFICATION_TYPES = {
+  EXPENSE_SUBMITTED: {
+    icon: '💰',
+    color: '#FFA500',
+    title: 'New Expense Submitted'
+  },
+  EXPENSE_APPROVED: {
+    icon: '✅',
+    color: '#32CD32',
+    title: 'Expense Approved'
+  },
+  EXPENSE_REJECTED: {
+    icon: '❌',
+    color: '#DC143C',
+    title: 'Expense Rejected'
+  },
+  EXPENSE_FULLY_APPROVED: {
+    icon: '🎉',
+    color: '#4CAF50',
+    title: 'Expense Fully Approved'
+  }
+};
+```
+
+##### Firebase Integration
+```javascript
+// Install Firebase dependencies
+npm install firebase socket.io-client
+
+// src/config/firebase.js
+import { initializeApp } from 'firebase/app';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+
+const firebaseConfig = {
+  // Your Firebase configuration
+};
+
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+
+export { messaging, getToken, onMessage };
+```
+
+##### Socket.IO Integration
+```javascript
+// src/hooks/useSocket.js
+import { useEffect, useContext } from 'react';
+import io from 'socket.io-client';
+import { AuthContext } from '../context/AuthContext';
+
+const useSocket = () => {
+  const { user, token } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (user && token) {
+      const socket = io('http://localhost:3001', {
+        auth: { token }
+      });
+
+      socket.on('new_notification', (notification) => {
+        // Handle real-time notification
+        showInAppNotification(notification);
+        updateNotificationCount();
+      });
+
+      return () => socket.disconnect();
+    }
+  }, [user, token]);
+};
+```
+
+##### Notification Hook
+```javascript
+// src/hooks/useNotifications.js
+import { useState, useEffect } from 'react';
+import { messaging, getToken, onMessage } from '../config/firebase';
+import { registerDeviceToken, getNotifications } from '../services/api';
+
+const useNotifications = (user) => {
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Request notification permission and register token
+  useEffect(() => {
+    if (user && 'Notification' in window) {
+      requestNotificationPermission();
+    }
+  }, [user]);
+
+  const requestNotificationPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      
+      if (permission === 'granted') {
+        const token = await getToken(messaging, {
+          vapidKey: 'YOUR_VAPID_KEY'
+        });
+        
+        if (token) {
+          await registerDeviceToken({
+            token,
+            device_type: 'web',
+            device_info: {
+              userAgent: navigator.userAgent,
+              platform: navigator.platform
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+    }
+  };
+
+  // Listen for foreground messages
+  useEffect(() => {
+    const unsubscribe = onMessage(messaging, (payload) => {
+      showInAppNotification(payload);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  return {
+    notifications,
+    unreadCount,
+    requestNotificationPermission
+  };
+};
+```
+
+##### API Integration Examples
+
+```javascript
+// Register Device Token
+POST /api/notifications/device-token
+{
+  "token": "firebase_device_token_here",
+  "device_type": "web",
+  "device_info": {
+    "userAgent": "Mozilla/5.0...",
+    "platform": "MacIntel"
+  }
+}
+
+// Get Notifications
+GET /api/notifications?limit=20&offset=0
+Response:
+{
+  "notifications": [...],
+  "total": 45,
+  "limit": 20,
+  "offset": 0
+}
+
+// Get Unread Count
+GET /api/notifications/unread-count
+Response:
+{
+  "unread_count": 3
+}
+
+// Mark as Read
+PUT /api/notifications/123/read
+Response:
+{
+  "message": "Notification marked as read"
+}
+```
+
+This comprehensive frontend will provide a complete user experience for the multi-level expense approval system, with secure user onboarding, robust password management, role-based dashboards, intuitive approval workflows, comprehensive expense management capabilities, and **real-time push notifications**.
+
+**IMPORTANT**: The notification system is fully implemented in the backend with Firebase Cloud Messaging and Socket.IO. Follow the FIREBASE_SETUP_GUIDE.md to configure your Firebase credentials and implement the frontend notification features.

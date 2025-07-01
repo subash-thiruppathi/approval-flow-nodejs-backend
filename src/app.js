@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const expenseRoutes = require('./routes/expense.routes');
 const authRoutes = require('./routes/auth.routes');
+const notificationRoutes = require('./routes/notification.routes');
 
 const app = express();
 app.use(express.json());
@@ -23,7 +24,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: 'http://localhost:3001',
       },
     ],
     components: {
@@ -61,5 +62,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Your routes
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/notifications', notificationRoutes);
+
+// Serve notification icons
+app.use('/icons', express.static(path.join(__dirname, '../public/icons')));
 
 module.exports = app;
