@@ -6,7 +6,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5000;
 
 // Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
@@ -58,7 +58,7 @@ global.io = io;
 (async () => {
   try {
     // Sync database (uncomment to recreate tables)
-    // await db.sequelize.sync({ force: true });
+    await db.sequelize.sync({ force: true });
     console.log('Database synchronized successfully');
     
     // Seed roles and statuses
