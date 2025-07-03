@@ -65,7 +65,7 @@ global.io = io;
     await createRoles();
     await createStatuses();
     
-    server.listen(PORT, () => {
+    server.listen(PORT, '0.0.0.0',() => {
       console.log(`Server running on port ${PORT}`);
       console.log('\n=== Multi-Level Expense Approval System with Real-time Notifications ===');
       console.log('Approval Flow: Employee → Manager → Accountant → Admin');
